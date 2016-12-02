@@ -1,4 +1,4 @@
-CREATE EXTENSION pgcrypto;
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 CREATE SCHEMA IF NOT EXISTS scrapedata;
 
 CREATE TABLE scrapedata.subforums
@@ -12,7 +12,13 @@ CREATE TABLE scrapedata.topics
     id          INT PRIMARY KEY,
     subforum_id INT REFERENCES scrapedata.subforums(id),
     title       VARCHAR(255),
-    url         VARCHAR(255),
+    url         VARCHAR(255)
+);
+
+CREATE TABLE scrapedata.topic_fetch_events
+(
+    id UUID     PRIMARY KEY DEFAULT gen_random_uuid(),
+    topic_id    INT REFERENCES scrapedata.topics(id),
     fetchtime   TIMESTAMP DEFAULT NULL
 );
 
