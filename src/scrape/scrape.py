@@ -10,12 +10,12 @@ VAUVA_URL = BASE_URL + '/keskustelu/alue/{subject}?page={page}'
 def get_sleep_time():
     return random.randrange(100, 221) / 1000
 
-def get_soup(html):
+def convert_to_soup(html):
     return BeautifulSoup(html, 'html.parser')
 
 def fetch_as_soup(url):
     response = requests.get(url)
-    return get_soup(response.text)
+    return convert_to_soup(response.text)
 
 def get_threads(page):
     thread_page_response = requests.get(VAUVA_URL.format(subject='aihe_vapaa', page=page))
@@ -23,12 +23,12 @@ def get_threads(page):
         return []
 
     threads = []
-    thread_page_soup = get_soup(thread_page_response.text)
+    thread_page_soup = convert_to_soup(thread_page_response.text)
     for single_thread in thread_page_soup.find_all('span', {'class': 'title'}):
         # Remove redundant content
         for span in single_thread.find_all('span'):
             span.replaceWith('')
-        single_thread = get_soup(str(single_thread))
+        single_thread = convert_to_soup(str(single_thread))
 
         threads.append({
             'url': BASE_URL + single_thread.a['href'],
@@ -43,7 +43,25 @@ def get_page_count(thread_soup):
     return 1
 
 def get_page_content(page):
-    return str(page.find('div', {'class': 'region-main'}))
+    main_region = page.find('div', {'class': 'region-main'})
+
+    # Remove social media integrations
+    for span in main_region.find_all('div', {'class': 'before clearfix'}):
+        span.replaceWith('')
+
+    # Remove comment form
+    for span in main_region.find_all('div', {'class': 'comment-form-wrapper'}):
+        span.replaceWith('')
+
+    # Remove paging
+    for span in main_region.find_all('li', {'class': 'pager'}):
+        span.replaceWith('')
+
+    # Remove message actions
+    for span in main_region.find_all('div', {'class': 'bottom clearfix'}):
+        span.replaceWith('')
+
+    return str(main_region)
 
 def get_keijo(thread):
     keijo = {
@@ -52,8 +70,10 @@ def get_keijo(thread):
         'pages': [],
     }
     first_page_soup = fetch_as_soup(thread['url'])
+    content = get_page_content(first_page_soup)
+    keijo['pages'].append(content)
+    
     page_count = get_page_count(first_page_soup)
-    keijo['pages'].append(get_page_content(first_page_soup))
 
     for page_number in range(1, page_count):
         page_url = thread['url'] + '?page=' + str(page_number)
@@ -64,7 +84,6 @@ def get_keijo(thread):
         time.sleep(get_sleep_time())
 
     return keijo
-
 
 def main():
     page = 0
