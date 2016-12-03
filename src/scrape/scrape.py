@@ -5,10 +5,10 @@ import time
 import random
 import itertools
 import re
+import configparser
 
 BASE_URL = 'http://www.vauva.fi'
 TOPIC_LIST_URL = BASE_URL + '/keskustelu/alue/{subforum}?page={page}'
-
 
 def get_sleep_time():
     return random.randrange(100, 221) / 1000
@@ -54,8 +54,11 @@ def get_page_content(page):
 
 
 def parse_topic_id_from_url(topic_url):
+    # URL format:
+    # /keskustelu/1660425/miks-salkkareissa-osa-ii?changed=1480763430
     reg_match = re.search(r'\/([0-9]+)', topic_url).group(0)
     return reg_match[1:]
+
 
 def get_topics(page, subforum='aihe_vapaa'):
     topic_list_url = TOPIC_LIST_URL.format(subforum=subforum, page=page)
@@ -109,26 +112,33 @@ def dump_to_json_file(filename, content):
         file_handle.write(json.dumps(content, indent=2))
 
 
+def get_configuration():
+    config = configparser.ConfigParser()
+    config.read('scrape.ini')
+    return {
+        'index_file': config.get('Dump Files', 'TopicIndex'),
+        'content_file':  config.get('Dump Files', 'TopicContents')
+    }
+
+
 def main():
+    config = get_configuration()
 
     # Get list of topics
     topics = []
     for page in itertools.count():
         topics += get_topics(page)
-        if not topics:
+        if not topics or page > 2:
             break
-        # TODO
-        break
 
-    dump_to_json_file('vauva-topics.json', topics)
+    dump_to_json_file(config['index_file'], topics)
 
     # Get contents of the topics
     topic_contents = []
     for topic in topics:
         topic_contents.append(get_topic_contents(topic))
 
-    # TODO write to DB
-    dump_to_json_file('vauva-pages.json', topic_contents)
+    dump_to_json_file(config['content_file'], topic_contents)
 
 if __name__ == '__main__':
     main()
