@@ -4,6 +4,7 @@ import json
 import time
 import random
 import itertools
+import re
 
 BASE_URL = 'http://www.vauva.fi'
 TOPIC_LIST_URL = BASE_URL + '/keskustelu/alue/{subforum}?page={page}'
@@ -52,6 +53,10 @@ def get_page_content(page):
     return str(main_region)
 
 
+def parse_topic_id_from_url(topic_url):
+    reg_match = re.search(r'\/([0-9]+)', topic_url).group(0)
+    return reg_match[1:]
+
 def get_topics(page, subforum='aihe_vapaa'):
     topic_list_url = TOPIC_LIST_URL.format(subforum=subforum, page=page)
     topic_list_response = requests.get(topic_list_url)
@@ -67,8 +72,10 @@ def get_topics(page, subforum='aihe_vapaa'):
     topic_list_soup = convert_to_soup(topic_list_response.text)
 
     for topic in topic_list_soup.find_all('span', {'class': 'title'}):
+        topic_url = topic.a['href']
         topics.append({
-            'url': BASE_URL + topic.a['href'],
+            'id': parse_topic_id_from_url(topic_url),
+            'url': BASE_URL + topic_url,
             'title': topic.a.contents[-1]
         })
 
@@ -97,6 +104,11 @@ def get_topic_contents(topic):
     return topic_contents
 
 
+def dump_to_json_file(filename, content):
+    with open(filename, 'w+') as file_handle:
+        file_handle.write(json.dumps(content, indent=2))
+
+
 def main():
 
     # Get list of topics
@@ -108,15 +120,15 @@ def main():
         # TODO
         break
 
+    dump_to_json_file('vauva-topics.json', topics)
+
     # Get contents of the topics
     topic_contents = []
     for topic in topics:
         topic_contents.append(get_topic_contents(topic))
 
     # TODO write to DB
-    with open('vauva-topics.json', 'w+') as f:
-        f.write(json.dumps(topic_contents, indent=2))
-
+    dump_to_json_file('vauva-pages.json', topic_contents)
 
 if __name__ == '__main__':
     main()
