@@ -43,7 +43,11 @@ def get_page_content(page):
         span.replaceWith('')
 
     # Remove paging
-    for span in main_region.find_all('li', {'class': 'pager'}):
+    for span in main_region.find_all('ul', {'class': 'pager'}):
+        span.replaceWith('')
+
+    # Remove paging title
+    for span in main_region.find_all('h2', {'class': 'element-invisible'}):
         span.replaceWith('')
 
     # Remove message actions
@@ -98,7 +102,7 @@ def get_topic_contents(topic):
     page_count = get_page_count(first_page_soup)
 
     for page_number in range(1, page_count):
-        page_url = topic['url'] + '?page=' + str(page_number)
+        page_url = topic['url'] + '&page=' + str(page_number)
         page = fetch_as_soup(page_url)
         content = get_page_content(page)
         topic_contents['pages'].append(content)
