@@ -1,21 +1,24 @@
-from bs4 import BeautifulSoup
-import requests
 import json
 import time
 import random
 import itertools
 import re
+import argparse
 import configparser
+import requests
+import bs4
+
 
 BASE_URL = 'http://www.vauva.fi'
 TOPIC_LIST_URL = BASE_URL + '/keskustelu/alue/{subforum}?page={page}'
+
 
 def get_sleep_time():
     return random.randrange(100, 221) / 1000
 
 
 def convert_to_soup(html):
-    return BeautifulSoup(html, 'html.parser')
+    return bs4.BeautifulSoup(html, 'html.parser')
 
 
 def fetch_as_soup(url):
@@ -70,7 +73,7 @@ def get_topics(page, subforum='aihe_vapaa'):
 
     if topic_list_response.status_code != 200:
         # NOTE:
-        # We get timeout (503) to the request on a non-existent pages.
+        # We get timeout (504) to the request on a non-existent pages.
         # Consider checking only for that and reattempt/skip on other
         # errors.
         return []
@@ -116,17 +119,25 @@ def dump_to_json_file(filename, content):
         file_handle.write(json.dumps(content, indent=2))
 
 
-def get_configuration():
+def get_configuration(config_path):
     config = configparser.ConfigParser()
-    config.read('scrape.ini')
+    config.read(config_path)
     return {
         'index_file': config.get('Dump Files', 'TopicIndex'),
-        'content_file':  config.get('Dump Files', 'TopicContents')
+        'content_file': config.get('Dump Files', 'TopicContents')
     }
 
 
 def main():
-    config = get_configuration()
+
+    parser = argparse.ArgumentParser(
+        description='Tool for scraping content from vauva.fi forum')
+    parser.add_argument(
+        'config_path', metavar='config_path', type=str,
+        help='path to the configuration file of the scraper')
+
+    args = parser.parse_args()
+    config = get_configuration(args.config_path)
 
     # Get list of topics
     topics = []
@@ -143,6 +154,7 @@ def main():
         topic_contents.append(get_topic_contents(topic))
 
     dump_to_json_file(config['content_file'], topic_contents)
+
 
 if __name__ == '__main__':
     main()
