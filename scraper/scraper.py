@@ -1,12 +1,12 @@
-import json
 import time
 import random
 import itertools
 import re
 import argparse
-import configparser
 import requests
 import bs4
+
+from utilities import *
 
 
 BASE_URL = 'http://www.vauva.fi'
@@ -15,16 +15,6 @@ TOPIC_LIST_URL = BASE_URL + '/keskustelu/alue/{subforum}?page={page}'
 
 def get_sleep_time():
     return random.randrange(100, 221) / 1000
-
-
-def convert_to_soup(html):
-    return bs4.BeautifulSoup(html, 'html.parser')
-
-
-def fetch_as_soup(url):
-    print('fetching ' + url)
-    response = requests.get(url)
-    return convert_to_soup(response.text)
 
 
 def get_page_count(topic_soup):
@@ -112,20 +102,6 @@ def get_topic_contents(topic):
         time.sleep(get_sleep_time())
 
     return topic_contents
-
-
-def dump_to_json_file(filename, content):
-    with open(filename, 'w+') as file_handle:
-        file_handle.write(json.dumps(content, indent=2))
-
-
-def get_configuration(config_path):
-    config = configparser.ConfigParser()
-    config.read(config_path)
-    return {
-        'index_file': config.get('Dump Files', 'TopicIndex'),
-        'content_file': config.get('Dump Files', 'TopicContents')
-    }
 
 
 def main():

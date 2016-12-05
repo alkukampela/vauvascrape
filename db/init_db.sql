@@ -1,37 +1,31 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
-CREATE SCHEMA IF NOT EXISTS scrapedata;
 
-CREATE TABLE scrapedata.subforums
+CREATE TABLE subforums
 (
     id      SERIAL PRIMARY KEY,
     name    VARCHAR(100)
 );
 
-CREATE TABLE scrapedata.topics
+CREATE TABLE topics
 (
     id          INT PRIMARY KEY,
-    subforum_id INT REFERENCES scrapedata.subforums(id),
+    subforum_id INT REFERENCES subforums(id),
     title       VARCHAR(255),
-    url         VARCHAR(255)
+    url         VARCHAR(255),
+    is_invalid  BOOLEAN DEFAULT false,
+    fetch_time  TIMESTAMP
 );
 
-CREATE TABLE scrapedata.topic_fetch_events
+CREATE TABLE pages
 (
     id UUID     PRIMARY KEY DEFAULT gen_random_uuid(),
-    topic_id    INT REFERENCES scrapedata.topics(id),
-    fetchtime   TIMESTAMP DEFAULT NULL
-);
-
-CREATE TABLE scrapedata.pages
-(
-    id UUID     PRIMARY KEY DEFAULT gen_random_uuid(),
-    topic_id    INT REFERENCES scrapedata.topics(id),
+    topic_id    INT REFERENCES topics(id),
     page_number INT,
     content     TEXT
 );
 
 
-INSERT INTO scrapedata.subforums (name)
+INSERT INTO subforums (name)
 VALUES  ('aihe_vapaa'),
         ('vauvakuume'),
         ('raskaus_ja_synnytys'),
