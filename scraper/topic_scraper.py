@@ -52,6 +52,9 @@ def scrape_topics(subforum_id, first_page, last_page):
     subforum_name = get_subforum_name(conn, subforum_id)
     for page in range(first_page, last_page + 1):
         topics = get_topics(page, subforum_name)
+        if not topics:
+            print('reached end of {} on page {}'.format(subforum_name, page))
+            break
         for topic in topics:
             topic['subforum_id'] = subforum_id
             try:
