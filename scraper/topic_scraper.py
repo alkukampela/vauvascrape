@@ -18,8 +18,8 @@ def parse_topic_id_from_url(topic_url):
     return reg_match[1:]
 
 
-def get_subforum_name(conn, subforum_id):
-    row = conn.query('select name from subforums where id=$1',
+def get_subforum_name(db, subforum_id):
+    row = db.query('select name from subforums where id=$1',
                      subforum_id).namedresult()
     if not row:
         raise ValueError('Invalid subforum id')
@@ -48,8 +48,8 @@ def get_topics(page, subforum):
 
 
 def scrape_topics(subforum_id, first_page, last_page):
-    conn = pg.DB(dbname='vauvafi', host='localhost', port=5432)
-    subforum_name = get_subforum_name(conn, subforum_id)
+    db = pg.DB(dbname='vauvafi', host='localhost', port=5432)
+    subforum_name = get_subforum_name(db, subforum_id)
     for page in range(first_page, last_page + 1):
         topics = get_topics(page, subforum_name)
         if not topics:
@@ -58,16 +58,17 @@ def scrape_topics(subforum_id, first_page, last_page):
         for topic in topics:
             topic['subforum_id'] = subforum_id
             try:
-                conn.begin()
-                conn.insert('topics', topic)
+                db.begin()
+                db.insert('topics', topic)
             except pg.IntegrityError:
                 pass
             finally:
-                conn.commit()
+                db.commit()
+    db.close()
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Tool for scraping content from vauva.fi forum')
+        description='Tool for scraping topic metadata from vauva.fi forum')
     parser.add_argument(
         '-sf', metavar='subforum', type=int,
         help='id of the subforum', default=1)
