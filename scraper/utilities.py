@@ -10,8 +10,9 @@ def get_configuration(config_path=CONFIG_PATH):
     config = configparser.ConfigParser()
     config.read(config_path)
     return {
-        'index_file': config.get('Dump Files', 'TopicIndex'),
-        'content_file': config.get('Dump Files', 'TopicContents')
+        'db_host': config.get('Database', 'Host'),
+        'db_port': int(config.get('Database', 'Port')),
+        'db_name': config.get('Database', 'DbName')
     }
 
 

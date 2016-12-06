@@ -49,9 +49,12 @@ def get_page_content(page_soup):
 def get_topic_pages(topic_url):
     pages = []
     first_page_soup = fetch_as_soup(topic_url)
+    # TODO check if topic has been removed:
+    # response.status_code = 403:
+
     content = get_page_content(first_page_soup)
     
-    pages.append({ "page_number": 0, "content": content})
+    pages.append({ 'page_number': 0, 'content': content})
 
     page_count = get_page_count(first_page_soup)
 
@@ -59,7 +62,7 @@ def get_topic_pages(topic_url):
         page_url = topic_url + '&page=' + str(page_number)
         page_soup = fetch_as_soup(page_url)
         content = get_page_content(page_soup)
-        pages.append({ "page_number": page_number, "content": content})
+        pages.append({ 'page_number': page_number, 'content': content})
         # Tryin' to be polite
         time.sleep(get_sleep_time())
 
@@ -67,7 +70,7 @@ def get_topic_pages(topic_url):
 
 
 def remove_old_posts(db, topic_id):
-    db.query("DELETE FROM posts WHERE topic_id = $1", topic_id)
+    db.query('DELETE FROM posts WHERE topic_id = $1', topic_id)
 
 
 def get_next_topic_to_fetch(db, fetch_time_limit):
@@ -94,11 +97,13 @@ def save_topic_pages(db, topic_id, pages):
 
 
 def set_fetch_time(db, topic_id):
-    db.query("UPDATE topics SET fetch_time = NOW() WHERE id = $1", topic_id)
+    db.query('UPDATE topics SET fetch_time = NOW() WHERE id = $1', topic_id)
 
-def fetch_topic_contents(fetch_time_limit):
-    db = pg.DB(dbname='vauvafi', host='localhost', port=5432)
 
+def fetch_topic_contents(config, fetch_time_limit):
+    db = pg.DB(dbname=config['db_name'],
+               host=config['db_host'],
+               port=config['db_port'])
     while True:
         db.begin()
         topic_metadata = get_next_topic_to_fetch(db, fetch_time_limit)
@@ -129,7 +134,7 @@ def main():
     # TODO: read from argument
     fetch_time_limit = '2000-01-01'
 
-    fetch_topic_contents(fetch_time_limit)
+    fetch_topic_contents(config, fetch_time_limit)
 
 if __name__ == '__main__':
     main()

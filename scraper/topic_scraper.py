@@ -20,7 +20,7 @@ def parse_topic_id_from_url(topic_url):
 
 def get_subforum_name(db, subforum_id):
     row = db.query('SELECT name FROM subforums WHERE id=$1',
-                     subforum_id).namedresult()
+                   subforum_id).namedresult()
     if not row:
         raise ValueError('Invalid subforum id')
     return row[0].name
@@ -47,8 +47,10 @@ def get_topics(page, subforum):
     return topics
 
 
-def scrape_topics(subforum_id, first_page, last_page):
-    db = pg.DB(dbname='vauvafi', host='localhost', port=5432)
+def scrape_topics(config, subforum_id, first_page, last_page):
+    db = pg.DB(dbname=config['db_name'],
+               host=config['db_host'],
+               port=config['db_port'])
     subforum_name = get_subforum_name(db, subforum_id)
     for page in range(first_page, last_page + 1):
         topics = get_topics(page, subforum_name)
@@ -65,6 +67,7 @@ def scrape_topics(subforum_id, first_page, last_page):
             finally:
                 db.commit()
     db.close()
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -90,7 +93,7 @@ def main():
         raise ValueError('Configuration file not specified')
 
     config = utilities.get_configuration(args.cp)
-    scrape_topics(args.sf, args.fp, args.lp)
+    scrape_topics(config, args.sf, args.fp, args.lp)
 
 
 if __name__ == '__main__':
