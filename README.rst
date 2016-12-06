@@ -61,4 +61,12 @@ Subforums
 
 Post Scraper
 ------------
-TODO
+This tool gets topic's pages containing posts and stores them to DB. Some of the content in 
+pages is removed before saving (f.e. social media integrations and links to various actions).
+Topics are fetched in (pseudo) random order to allow paraller executioning. If fetching of topic 
+fails for whatever reason the topic will be marked as invalid. Program runs until all non invalid 
+topics are fetched or it's stopped (ctrl+c).
+
+Parameters
+~~~~~~~~~~
+    - ``-cp`` path to ``scrape.ini`` file.
