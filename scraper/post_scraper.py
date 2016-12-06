@@ -13,6 +13,15 @@ def get_sleep_time():
     return random.randrange(100, 221) / 1000
 
 
+def fetch_page_as_soup(topic_url, page_number):
+    url = topic_url + '&page=' + str(page_number)
+    print('fetching ' + url)
+    response = requests.get(url)
+    if response.status_code is 200:
+        return convert_to_soup(response.text)
+    return None
+
+
 def get_page_count(topic_soup):
     last_page_bullet = topic_soup.find('li', {'class': 'pager-last last'})
     if last_page_bullet is not None:
@@ -48,19 +57,21 @@ def get_page_content(page_soup):
 
 def get_topic_pages(topic_url):
     pages = []
-    first_page_soup = fetch_as_soup(topic_url)
-    # TODO check if topic has been removed:
-    # response.status_code = 403:
-
+    first_page_soup = fetch_page_as_soup(topic_url, 0)
+    if not first_page_soup:
+        return []
     content = get_page_content(first_page_soup)
-    
-    pages.append({ 'page_number': 0, 'content': content})
+    pages.append({'page_number': 0, 'content': content})
 
     page_count = get_page_count(first_page_soup)
 
     for page_number in range(1, page_count):
-        page_url = topic_url + '&page=' + str(page_number)
-        page_soup = fetch_as_soup(page_url)
+        page_soup = fetch_page_as_soup(topic_url, page_number)
+
+        if not page_soup:
+            # Content couldn't be fetched
+            return []
+
         content = get_page_content(page_soup)
         pages.append({ 'page_number': page_number, 'content': content})
         # Tryin' to be polite
@@ -100,6 +111,10 @@ def set_fetch_time(db, topic_id):
     db.query('UPDATE topics SET fetch_time = NOW() WHERE id = $1', topic_id)
 
 
+def mark_topic_as_invalid(db, topic_id):
+    db.query('UPDATE topics SET is_invalid=TRUE WHERE id = $1', topic_id)
+
+
 def fetch_topic_contents(config, fetch_time_limit):
     db = pg.DB(dbname=config['db_name'],
                host=config['db_host'],
@@ -109,6 +124,12 @@ def fetch_topic_contents(config, fetch_time_limit):
         topic_metadata = get_next_topic_to_fetch(db, fetch_time_limit)
         remove_old_posts(db, topic_metadata['id'])
         pages = get_topic_pages(topic_metadata['url'])
+        if not pages:
+            print('Topic id '+str(topic_metadata['id'])+' was marked as invalid')
+            mark_topic_as_invalid(db, topic_metadata['id'])
+            db.commit()
+            continue
+
         save_topic_pages(db, topic_metadata['id'], pages)
         set_fetch_time(db, topic_metadata['id'])
         db.commit()

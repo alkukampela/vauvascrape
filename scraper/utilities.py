@@ -23,9 +23,3 @@ def dump_to_json_file(filename, content):
 
 def convert_to_soup(html):
     return bs4.BeautifulSoup(html, 'html.parser')
-
-
-def fetch_as_soup(url):
-    print('fetching ' + url)
-    response = requests.get(url)
-    return convert_to_soup(response.text)
