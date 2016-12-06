@@ -3,6 +3,7 @@ import pg
 import random
 import sys
 import time
+import datetime
 import re
 
 from utilities import *
@@ -59,7 +60,7 @@ def get_topic_pages(topic_url):
         page_soup = fetch_as_soup(page_url)
         content = get_page_content(page_soup)
         pages.append({ "page_number": page_number, "content": content})
-        # Trying' to be polite
+        # Tryin' to be polite
         time.sleep(get_sleep_time())
 
     return pages
@@ -92,6 +93,9 @@ def save_topic_pages(db, topic_id, pages):
         db.insert('posts', page)
 
 
+def set_fetch_time(db, topic_id):
+    db.query("UPDATE topics SET fetch_time = NOW() WHERE id = $1", topic_id)
+
 def fetch_topic_contents(fetch_time_limit):
     db = pg.DB(dbname='vauvafi', host='localhost', port=5432)
 
@@ -101,6 +105,7 @@ def fetch_topic_contents(fetch_time_limit):
         remove_old_posts(db, topic_metadata['id'])
         pages = get_topic_pages(topic_metadata['url'])
         save_topic_pages(db, topic_metadata['id'], pages)
+        set_fetch_time(db, topic_metadata['id'])
         db.commit()
         print('Topic id '+str(topic_metadata['id'])+ ' saved with '+str(len(pages))+' pages.')
 
