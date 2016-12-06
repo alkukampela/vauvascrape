@@ -14,7 +14,7 @@ def get_sleep_time():
 
 
 def fetch_page_as_soup(topic_url, page_number):
-    url = topic_url + '&page=' + str(page_number)
+    url = topic_url + '?page=' + str(page_number)
     print('fetching ' + url)
     response = requests.get(url)
     if response.status_code == 200:
@@ -81,7 +81,7 @@ def get_topic_pages(topic_url):
 
 
 def remove_old_posts(db, topic_id):
-    db.query('DELETE FROM posts WHERE topic_id = $1', topic_id)
+    db.query('DELETE FROM post_pages WHERE topic_id = $1', topic_id)
 
 
 def get_next_topic_to_fetch(db, fetch_time_limit):
@@ -104,7 +104,7 @@ def get_next_topic_to_fetch(db, fetch_time_limit):
 def save_topic_pages(db, topic_id, pages):
     for page in pages:
         page['topic_id'] = topic_id
-        db.insert('posts', page)
+        db.insert('post_pages', page)
 
 
 def set_fetch_time(db, topic_id):

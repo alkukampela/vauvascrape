@@ -11,6 +11,12 @@ BASE_URL = 'http://www.vauva.fi'
 TOPIC_LIST_URL = BASE_URL + '/keskustelu/alue/{subforum}?page={page}'
 
 
+def get_topic_url(topic_item):
+    topic_url = topic_item.a['href']
+    # Remove url parameters
+    return topic_url.split('?', 1)[0]
+
+
 def parse_topic_id_from_url(topic_url):
     # URL format:
     # /keskustelu/1660425/miks-salkkareissa-osa-ii?changed=1480763430
@@ -37,7 +43,7 @@ def get_topics(page, subforum):
     topic_list_soup = utilities.convert_to_soup(topic_list_response.text)
 
     for topic in topic_list_soup.find_all('span', {'class': 'title'}):
-        topic_url = topic.a['href']
+        topic_url = get_topic_url(topic)
         topics.append({
             'id': parse_topic_id_from_url(topic_url),
             'url': BASE_URL + topic_url,
