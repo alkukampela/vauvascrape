@@ -17,7 +17,7 @@ def fetch_page_as_soup(topic_url, page_number):
     url = topic_url + '&page=' + str(page_number)
     print('fetching ' + url)
     response = requests.get(url)
-    if response.status_code is 200:
+    if response.status_code == 200:
         return convert_to_soup(response.text)
     return None
 
@@ -73,7 +73,7 @@ def get_topic_pages(topic_url):
             return []
 
         content = get_page_content(page_soup)
-        pages.append({ 'page_number': page_number, 'content': content})
+        pages.append({'page_number': page_number, 'content': content})
         # Tryin' to be polite
         time.sleep(get_sleep_time())
 
