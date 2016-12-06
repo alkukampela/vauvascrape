@@ -17,8 +17,8 @@ scraped before the actual content can be scraped.
 Parameters
 ~~~~~~~~~~
     - ``-sf`` Subforum id, see list below. Uses 1 if not provided.
-    - ``-fp`` First page where topics are looked in. Scraping starts from first page if this parameter is not provided.
-    - ``-lp`` Last page where topics are looked in. Scraping stops after first page if this parameter is not provided.
+    - ``-fp`` First page where topics are looked in. Scraping starts from first page if the parameter is not provided.
+    - ``-lp`` Last page where topics are looked in. Scraping stops at page 100 if the parameter is not provided.
     - ``-cp`` path to ``scrape.ini`` file.
 
 Subforums
