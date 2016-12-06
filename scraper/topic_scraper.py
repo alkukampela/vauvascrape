@@ -19,7 +19,7 @@ def parse_topic_id_from_url(topic_url):
 
 
 def get_subforum_name(db, subforum_id):
-    row = db.query('select name from subforums where id=$1',
+    row = db.query('SELECT name FROM subforums WHERE id=$1',
                      subforum_id).namedresult()
     if not row:
         raise ValueError('Invalid subforum id')
