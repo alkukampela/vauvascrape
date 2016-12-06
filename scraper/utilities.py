@@ -1,6 +1,7 @@
 import configparser
 import json
 import bs4
+import requests
 
 CONFIG_PATH = 'config/scraper.ini'
 
