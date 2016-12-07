@@ -34,6 +34,7 @@ def get_subforum_name(db, subforum_id):
 
 def get_topics(page, subforum):
     topic_list_url = TOPIC_LIST_URL.format(subforum=subforum, page=page)
+    print('Fetching ' + topic_list_url)
     topic_list_response = requests.get(topic_list_url)
 
     if topic_list_response.status_code != 200:
@@ -56,12 +57,15 @@ def get_topics(page, subforum):
 def scrape_topics(config, subforum_id, first_page, last_page):
     db = pg.DB(dbname=config['db_name'],
                host=config['db_host'],
-               port=config['db_port'])
+               port=config['db_port'],
+               user=config['db_user'],
+               passwd=config['db_password'])
     subforum_name = get_subforum_name(db, subforum_id)
     for page in range(first_page, last_page + 1):
         topics = get_topics(page, subforum_name)
+        new_topic_count = len(topics)
         if not topics:
-            print('reached end of {} on page {}'.format(subforum_name, page))
+            print('Reached end of {} on page {}'.format(subforum_name, page))
             break
         for topic in topics:
             topic['subforum_id'] = subforum_id
@@ -69,9 +73,12 @@ def scrape_topics(config, subforum_id, first_page, last_page):
                 db.begin()
                 db.insert('topics', topic)
             except pg.IntegrityError:
-                pass
+                new_topic_count -= 1
             finally:
                 db.commit()
+        print('Jellied {} new topics from subforum id {} page {}'.format(
+            new_topic_count, subforum_id, page + 1))
+
     db.close()
 
 

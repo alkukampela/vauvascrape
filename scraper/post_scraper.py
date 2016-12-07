@@ -118,7 +118,9 @@ def mark_topic_as_invalid(db, topic_id):
 def fetch_topic_contents(config, fetch_time_limit):
     db = pg.DB(dbname=config['db_name'],
                host=config['db_host'],
-               port=config['db_port'])
+               port=config['db_port'],
+               user=config['db_user'],
+               passwd=config['db_password'])
     while True:
         db.begin()
         topic_metadata = get_next_topic_to_fetch(db, fetch_time_limit)

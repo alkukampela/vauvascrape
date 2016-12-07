@@ -12,7 +12,9 @@ def get_configuration(config_path=CONFIG_PATH):
     return {
         'db_host': config.get('Database', 'Host'),
         'db_port': int(config.get('Database', 'Port')),
-        'db_name': config.get('Database', 'DbName')
+        'db_name': config.get('Database', 'DbName'),
+        'db_user': config.get('Database', 'User'),
+        'db_password': config.get('Database', 'Password'),
     }
 
 
