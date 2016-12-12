@@ -20,7 +20,10 @@ def get_configuration(config_path=CONFIG_PATH):
 
 def dump_to_json_file(filename, content):
     with open(filename, 'w+') as file_handle:
-        file_handle.write(json.dumps(content, indent=2))
+        file_handle.write(json.dumps(content,
+                                     indent=2,
+                                     default=lambda o: str(o),
+                                     ensure_ascii=False))
 
 
 def convert_to_soup(html):
