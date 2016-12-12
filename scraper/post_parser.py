@@ -12,6 +12,7 @@ import utilities
 
 class PostParser:
 
+
     # E.g. "klo 22:32 | 18.4.2008"
     VAUVA_DATETIME_FORMAT = 'klo %H:%M | %d.%m.%Y'
 
@@ -36,7 +37,7 @@ class PostParser:
                 'ORDER BY RANDOM() LIMIT 1').namedresult()
             if not row:
                 print('No topics to parse')
-                yield None
+                return
 
             yield row[0].id
 
@@ -102,8 +103,6 @@ class PostParser:
 
         a = []
         for i, topic_id in enumerate(self.get_next_topic_id_to_parse()):
-            if topic_id is None:
-                break
             print('Parsing topic ' + str(topic_id))
             post_pages = self.get_post_pages(topic_id)
             posts = self.parse_topic(post_pages)
