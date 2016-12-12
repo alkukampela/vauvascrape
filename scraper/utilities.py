@@ -28,3 +28,9 @@ def dump_to_json_file(filename, content):
 
 def convert_to_soup(html):
     return bs4.BeautifulSoup(html, 'html.parser')
+
+
+def remove_attributes(soup):
+    for tag in soup.findAll(True): 
+        tag.attrs = {}
+    return soup

@@ -12,7 +12,6 @@ import utilities
 
 class PostParser:
 
-
     # E.g. "klo 22:32 | 18.4.2008"
     VAUVA_DATETIME_FORMAT = 'klo %H:%M | %d.%m.%Y'
 
@@ -36,10 +35,11 @@ class PostParser:
                 'HAVING COUNT(P.*) = 0 ' +
                 'ORDER BY RANDOM() LIMIT 1').namedresult()
             if not row:
-                print('No topics to parse')
+                print('No topics left to parse')
                 return
 
             yield row[0].id
+
 
     def get_post_pages(self, topic_id):
         rows = self.db.query(
@@ -55,19 +55,42 @@ class PostParser:
         timestamp_str = container.find('div', {'class': 'field-item'}).contents[0]
         return datetime.strptime(timestamp_str, PostParser.VAUVA_DATETIME_FORMAT)
 
-    def remove_quotes(self, post_content):
+
+    def remove_quotations(self, post_content):
         for quote in post_content.find_all('blockquote'):
             quote.replaceWith('')
         return post_content
 
+
+    def remove_linefeeds(self, post_content):
+        return post_content.replace('\n', ' ')
+
+
+    def purify_content(self, post_content_soap):
+        post_content_soap = utilities.remove_attributes(post_content_soap)
+        post_content_soap = self.remove_quotations(post_content_soap)
+        
+        # Replace br-tags with linefeeds
+        for br in post_content_soap.find_all('br'):
+            br.replace_with('\n')
+
+        post_content = post_content_soap.get_text()
+        post_content = self.remove_linefeeds(post_content)
+
+        # Remove multiple whitespaces
+        post_content = re.sub('\s+', ' ', post_content).strip()
+        return post_content
+
+
     def parse_post_content(self, post_soup):
         container = post_soup.find('div', {'class': PostParser.CONTENT_CLASSES})
-        field_item = container.find('div', {'class': 'field-item'})
-        if not field_item.contents:
-            return ''
-        post_content = field_item.contents[0]
-        post_content = self.remove_quotes(post_content)
-        return post_content.get_text()
+        if container is None:
+            return
+
+        post_content_soap = container.find('div', {'class': 'field-item'})
+        post_content = self.purify_content(post_content_soap)
+        return post_content
+
 
     def parse_posts(self, sanoma_comment_soups):
         posts = []
@@ -85,6 +108,7 @@ class PostParser:
 
         return posts
 
+
     def parse_topic(self, pages):
         sanoma_comment_soups = []
         for page in pages:
@@ -92,6 +116,13 @@ class PostParser:
             sanoma_comment_soups += page_soup.find_all('div', {'class': 'sanoma-comment'})
 
         return self.parse_posts(sanoma_comment_soups)
+
+    
+    def add_topic_id_post_numbers(self, topic_id, posts):
+        for i, post in enumerate(posts):
+            post['topic_id'] = topic_id
+            post['post_number'] = i+1
+        return posts
 
 
     def parse_topics(self):
@@ -106,6 +137,12 @@ class PostParser:
             print('Parsing topic ' + str(topic_id))
             post_pages = self.get_post_pages(topic_id)
             posts = self.parse_topic(post_pages)
+
+            if posts is None:
+                # TODO: only empty posts in topic, mark it as invalid
+                pass
+
+            posts = self.add_topic_id_post_numbers(topic_id, posts)
             a += posts
             if i > 5:
                 break
