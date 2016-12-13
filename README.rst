@@ -70,3 +70,18 @@ topics are fetched or it's stopped (ctrl+c).
 Parameters
 ~~~~~~~~~~
     - ``-cp`` path to ``scrape.ini`` file.
+
+Post Parser
+-----------
+This tool fetches topic's posts from DB and extracts actual data from posts to ``posts``-table. 
+Topics are fetched in similar fashion with Post Scraper.
+Things that are stored to each post:
+
+    - Topic's identity
+    - Post content without HTML-tags and quoted content from other posts
+    - Timestamp when post was published
+    - Post's position in the topic
+
+Parameters
+~~~~~~~~~~
+    - ``-cp`` path to ``scrape.ini`` file.
