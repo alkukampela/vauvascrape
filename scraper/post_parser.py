@@ -69,7 +69,7 @@ class PostParser:
     def purify_content(self, post_content_soap):
         post_content_soap = utilities.remove_attributes(post_content_soap)
         post_content_soap = self.remove_quotations(post_content_soap)
-        
+
         # Replace br-tags with linefeeds
         for br in post_content_soap.find_all('br'):
             br.replace_with('\n')
@@ -117,13 +117,20 @@ class PostParser:
 
         return self.parse_posts(sanoma_comment_soups)
 
-    
+
     def add_topic_id_post_numbers(self, topic_id, posts):
         for i, post in enumerate(posts):
             post['topic_id'] = topic_id
             post['post_number'] = i+1
         return posts
 
+
+    def mark_topic_as_invalid(self, topic_id):
+        self.db.query('UPDATE topics SET is_invalid=TRUE WHERE id = $1', topic_id)
+
+    def save_posts(self, posts):
+        for post in posts:
+            self.db.insert('posts', post)
 
     def parse_topics(self):
         self.db = pg.DB(dbname=self.config['db_name'],
@@ -132,22 +139,22 @@ class PostParser:
                         user=self.config['db_user'],
                         passwd=self.config['db_password'])
 
-        a = []
-        for i, topic_id in enumerate(self.get_next_topic_id_to_parse()):
+        self.db.begin()
+        for topic_id in self.get_next_topic_id_to_parse():
             print('Parsing topic ' + str(topic_id))
             post_pages = self.get_post_pages(topic_id)
             posts = self.parse_topic(post_pages)
 
             if posts is None:
-                # TODO: only empty posts in topic, mark it as invalid
-                pass
+                # Only empty posts in topic, mark it as invalid
+                self.mark_topic_as_invalid(topic_id)
+            else:
+                posts = self.add_topic_id_post_numbers(topic_id, posts)
+                self.save_posts(posts)
 
-            posts = self.add_topic_id_post_numbers(topic_id, posts)
-            a += posts
-            if i > 5:
-                break
+            self.db.commit()
+            self.db.begin()
 
-        utilities.dump_to_json_file('posts.json', a)
         self.db.close()
 
 
