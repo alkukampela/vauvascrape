@@ -11,10 +11,11 @@ def get_configuration(config_path=CONFIG_PATH):
     config.read(config_path)
     return {
         'db_host': config.get('Database', 'Host'),
-        'db_port': int(config.get('Database', 'Port')),
+        'db_port': config.getint('Database', 'Port'),
         'db_name': config.get('Database', 'DbName'),
         'db_user': config.get('Database', 'User'),
         'db_password': config.get('Database', 'Password'),
+        'batch_size': config.getint('PostParser', 'BatchSize'),
     }
 
 
@@ -31,6 +32,6 @@ def convert_to_soup(html):
 
 
 def remove_attributes(soup):
-    for tag in soup.findAll(True): 
+    for tag in soup.findAll(True):
         tag.attrs = {}
     return soup

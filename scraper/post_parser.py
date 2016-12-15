@@ -26,14 +26,14 @@ class PostParser:
     def get_next_topic_id_to_parse(self):
         while True:
             row = self.db.query(
-                'SELECT T.id '+
-                'FROM topics T '+
-                'LEFT JOIN posts P '+
-                'ON T.id = P.topic_id '+
-                'WHERE T.is_invalid = false '+
-                'GROUP BY T.id ' +
-                'HAVING COUNT(P.*) = 0 ' +
-                'ORDER BY RANDOM() LIMIT 1').namedresult()
+                """SELECT T.id
+                    FROM topics T
+                    LEFT JOIN posts P
+                    ON T.id = P.topic_id
+                    WHERE T.is_invalid = false
+                    AND P.id IS NULL
+                    ORDER BY RANDOM()
+                    LIMIT 1""").namedresult()
             if not row:
                 print('No topics left to parse')
                 return
@@ -140,11 +140,10 @@ class PostParser:
                         passwd=self.config['db_password'])
 
         self.db.begin()
-        for topic_id in self.get_next_topic_id_to_parse():
+        for i, topic_id in enumerate(self.get_next_topic_id_to_parse()):
             print('Parsing topic ' + str(topic_id))
             post_pages = self.get_post_pages(topic_id)
             posts = self.parse_topic(post_pages)
-
             if posts is None:
                 # Only empty posts in topic, mark it as invalid
                 self.mark_topic_as_invalid(topic_id)
@@ -152,8 +151,10 @@ class PostParser:
                 posts = self.add_topic_id_post_numbers(topic_id, posts)
                 self.save_posts(posts)
 
-            self.db.commit()
-            self.db.begin()
+            if not (i + 1) % self.config['batch_size']:
+                print('Parsed batch of topics: commit')
+                self.db.commit()
+                self.db.begin()
 
         self.db.close()
 
