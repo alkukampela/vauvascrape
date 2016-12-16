@@ -1,10 +1,24 @@
 import argparse
 
 import libvoikko
-import utilities
 import pg
+import re
 
-# voikko = libvoikko.Voikko('fi')
+import utilities
+import sanitation
+
+
+#
+voikko = libvoikko.Voikko('fi')
+
+def remove_smilies(topic):
+    smilies = sanitation.get_smilies()
+    for smiley in smilies:
+        topic = topic.replace(smiley, ' ')
+    return topic
+
+
+    return topic
 
 def get_sanitized_topic(config):
     db = pg.DB(dbname=config['db_name'],
@@ -16,9 +30,13 @@ def get_sanitized_topic(config):
     posts = db.query('SELECT content '
                     'FROM posts '
                     'WHERE topic_id=$1 '
-                    'ORDER BY post_number', 2722541).namedresult()
+                    'ORDER BY post_number', 2698286).namedresult()
 
     topic = ' '.join([post.content for post in posts])
+
+    topic = remove_smilies(topic)
+    topic = re.sub(r',|!|\?|\.|\)|\(|\^|/', '', topic)
+
     return topic
     # TODO remove smilies, punctuation .,;()[]{}!? etc.
 
