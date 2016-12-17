@@ -8,8 +8,16 @@ import utilities
 import sanitation
 
 
-#
-voikko = libvoikko.Voikko('fi')
+def voikkoa(topic):
+    voikko = libvoikko.Voikko('fi')
+    
+    words = topic.split()
+    for word in words:
+        print(voikko.analyze(word))
+
+
+    print(topic)
+
 
 def remove_smilies(topic):
     smilies = sanitation.get_smilies()
@@ -17,8 +25,6 @@ def remove_smilies(topic):
         topic = topic.replace(smiley, ' ')
     return topic
 
-
-    return topic
 
 def get_sanitized_topic(config):
     db = pg.DB(dbname=config['db_name'],
@@ -30,15 +36,20 @@ def get_sanitized_topic(config):
     posts = db.query('SELECT content '
                     'FROM posts '
                     'WHERE topic_id=$1 '
-                    'ORDER BY post_number', 2698286).namedresult()
+                    'ORDER BY post_number', 2728956).namedresult()
 
     topic = ' '.join([post.content for post in posts])
 
     topic = remove_smilies(topic)
-    topic = re.sub(r',|!|\?|\.|\)|\(|\^|/', '', topic)
+
+
+    topic = re.sub(r',|!|\?|\.|\)|\(|\^|/|"|:|;|\[|\]|{|}', ' ', topic)
+
+    # Remove multiple whitespaces
+    topic = re.sub('\s+', ' ', topic).strip()
 
     return topic
-    # TODO remove smilies, punctuation .,;()[]{}!? etc.
+    # TODO remove punctuation {} etc.
 
 
 def main():
@@ -50,8 +61,8 @@ def main():
     args = parser.parse_args()
     config = utilities.get_configuration(args.cp)
 
-    print(get_sanitized_topic(config))
-
+    topic = (get_sanitized_topic(config))
+    voikkoa(topic)
 
 if __name__ == '__main__':
     main()
