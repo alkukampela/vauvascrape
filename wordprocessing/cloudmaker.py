@@ -1,22 +1,59 @@
 import argparse
-
+import re
 import libvoikko
 import pg
-import re
+import operator
 
 import utilities
 import sanitation
 
+VOIKKO_BASEFORM = 'BASEFORM'
 
-def voikkoa(topic):
+def count_frequencies(baseform_words):
+    frequencies = dict()
+    for baseform_word in baseform_words:
+        if baseform_word in frequencies:
+            frequencies[baseform_word] += 1
+        else:
+            frequencies[baseform_word] = 1
+
+    return sorted(frequencies.items(), key=operator.itemgetter(1), reverse=True)
+
+
+def get_baseform_word(voikko, word):
+    word_analysis = voikko.analyze(word)
+
+    pros_words = []
+
+    if word_analysis:
+        pros_words.append(word_analysis[0][VOIKKO_BASEFORM])
+    else:
+        voikko_suggestions = voikko.suggest(word)
+        if voikko_suggestions:
+            # Coumpound words might have been typed together
+            suggestions = voikko_suggestions[0].split()
+
+            for suggestion in suggestions:
+                suggestion_voikko = voikko.analyze(suggestion)
+                if suggestion_voikko:
+                    pros_words.append(suggestion_voikko[0][VOIKKO_BASEFORM])
+                else:
+                    pros_words.append(suggestion)
+
+    if not pros_words:
+        pros_words.append(word)
+
+    return pros_words
+
+
+def get_baseword_frequencies(topic):
     voikko = libvoikko.Voikko('fi')
-    
-    words = topic.split()
-    for word in words:
-        print(voikko.analyze(word))
+    orig_words = topic.split()
+    baseform_words = []
+    for orig_word in orig_words:
+        baseform_words = baseform_words + get_baseform_word(voikko, orig_word)
 
-
-    print(topic)
+    return count_frequencies(baseform_words)
 
 
 def remove_smilies(topic):
@@ -28,28 +65,25 @@ def remove_smilies(topic):
 
 def get_sanitized_topic(config):
     db = pg.DB(dbname=config['db_name'],
-                host=config['db_host'],
-                port=config['db_port'],
-                user=config['db_user'],
-                passwd=config['db_password'])
+               host=config['db_host'],
+               port=config['db_port'],
+               user=config['db_user'],
+               passwd=config['db_password'])
 
     posts = db.query('SELECT content '
-                    'FROM posts '
-                    'WHERE topic_id=$1 '
-                    'ORDER BY post_number', 2728956).namedresult()
+                     'FROM posts '
+                     'WHERE topic_id=$1 '
+                     'ORDER BY post_number', 2703065).namedresult()
 
     topic = ' '.join([post.content for post in posts])
 
     topic = remove_smilies(topic)
-
-
-    topic = re.sub(r',|!|\?|\.|\)|\(|\^|/|"|:|;|\[|\]|{|}', ' ', topic)
-
+    # Remove unneeded characters
+    topic = re.sub(r',|!|\?|\.|\)|\(|\^|/|"|&|:|;|=|~|\[|\]|{|}|_|\*|\|', ' ', topic)
     # Remove multiple whitespaces
-    topic = re.sub('\s+', ' ', topic).strip()
+    topic = re.sub(r'\s+', ' ', topic).strip()
 
     return topic
-    # TODO remove punctuation {} etc.
 
 
 def main():
@@ -62,7 +96,11 @@ def main():
     config = utilities.get_configuration(args.cp)
 
     topic = (get_sanitized_topic(config))
-    voikkoa(topic)
+    baseword_frequencies = get_baseword_frequencies(topic)
+
+    for baseword_frequency in baseword_frequencies:
+        print(baseword_frequency)
+
 
 if __name__ == '__main__':
     main()
