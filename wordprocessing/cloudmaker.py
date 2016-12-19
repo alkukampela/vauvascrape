@@ -3,11 +3,13 @@ import re
 import libvoikko
 import pg
 import operator
+from itertools import filterfalse
 
 import utilities
 import sanitation
 
 VOIKKO_BASEFORM = 'BASEFORM'
+ILLEGAL_CHARS_REGEX = r',|!|\?|\.|\)|\(|\^|/|"|&|:|;|=|~|\+|\[|\]|{|}|_|\*|\|'
 
 def count_frequencies(baseform_words):
     frequencies = dict()
@@ -18,6 +20,13 @@ def count_frequencies(baseform_words):
             frequencies[baseform_word] = 1
 
     return sorted(frequencies.items(), key=operator.itemgetter(1), reverse=True)
+
+def remove_numbers(words):
+    return list(filterfalse(lambda word: word.isdigit(), words))
+
+def remove_common_words(words):
+    common_words = sanitation.get_common_words()
+    return list(filterfalse(lambda word: word in common_words, words))
 
 
 def get_baseform_word(voikko, word):
@@ -51,8 +60,12 @@ def get_baseword_frequencies(topic):
     orig_words = topic.split()
     baseform_words = []
     for orig_word in orig_words:
-        baseform_words = baseform_words + get_baseform_word(voikko, orig_word)
+        word = orig_word.strip('-')
+        if word:
+            baseform_words += get_baseform_word(voikko, word)
 
+    baseform_words = remove_common_words(baseform_words)
+    baseform_words = remove_numbers(baseform_words)
     return count_frequencies(baseform_words)
 
 
@@ -73,13 +86,13 @@ def get_sanitized_topic(config):
     posts = db.query('SELECT content '
                      'FROM posts '
                      'WHERE topic_id=$1 '
-                     'ORDER BY post_number', 2703065).namedresult()
+                     'ORDER BY post_number', 52886).namedresult()
 
     topic = ' '.join([post.content for post in posts])
 
     topic = remove_smilies(topic)
     # Remove unneeded characters
-    topic = re.sub(r',|!|\?|\.|\)|\(|\^|/|"|&|:|;|=|~|\[|\]|{|}|_|\*|\|', ' ', topic)
+    topic = re.sub(ILLEGAL_CHARS_REGEX, ' ', topic)
     # Remove multiple whitespaces
     topic = re.sub(r'\s+', ' ', topic).strip()
 
