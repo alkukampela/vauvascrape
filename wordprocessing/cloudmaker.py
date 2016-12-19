@@ -4,6 +4,7 @@ import libvoikko
 import pg
 import operator
 from itertools import filterfalse
+from collections import OrderedDict
 
 import utilities
 import sanitation
@@ -13,13 +14,19 @@ ILLEGAL_CHARS_REGEX = r',|!|\?|\.|\)|\(|\^|/|"|&|:|;|=|~|\+|\[|\]|{|}|_|\*|\|'
 
 def count_frequencies(baseform_words):
     frequencies = dict()
+    words_in_corpus = 0
     for baseform_word in baseform_words:
         if baseform_word in frequencies:
             frequencies[baseform_word] += 1
         else:
             frequencies[baseform_word] = 1
+        words_in_corpus += 1
 
-    return sorted(frequencies.items(), key=operator.itemgetter(1), reverse=True)
+    for key, value in frequencies.items():
+        frequencies[key] /= words_in_corpus
+
+    frequencies = OrderedDict(sorted(frequencies.items(), key=operator.itemgetter(0)))
+    return OrderedDict(sorted(frequencies.items(), key=operator.itemgetter(1), reverse=True))
 
 def remove_numbers(words):
     return list(filterfalse(lambda word: word.isdigit(), words))
@@ -111,9 +118,8 @@ def main():
     topic = (get_sanitized_topic(config))
     baseword_frequencies = get_baseword_frequencies(topic)
 
-    for baseword_frequency in baseword_frequencies:
-        print(baseword_frequency)
-
+    for word, freq in baseword_frequencies.items():
+        print(word + ': '+str(freq))
 
 if __name__ == '__main__':
     main()
