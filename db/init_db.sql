@@ -8,12 +8,13 @@ CREATE TABLE subforums
 
 CREATE TABLE topics
 (
-    id          INT PRIMARY KEY,
-    subforum_id INT REFERENCES subforums(id),
-    title       VARCHAR(255),
-    url         VARCHAR(255),
-    is_invalid  BOOLEAN DEFAULT false,
-    fetch_time  timestamp without time zone NOT NULL DEFAULT '1970-01-01 00:00:00'::timestamp without time zone
+    id                INT PRIMARY KEY,
+    subforum_id       INT REFERENCES subforums(id),
+    title             VARCHAR(255),
+    url               VARCHAR(255),
+    is_invalid        BOOLEAN DEFAULT false,
+    fetch_time        timestamp without time zone NOT NULL DEFAULT '1970-01-01 00:00:00'::timestamp without time zone
+    unique_word_count INT DEFAULT 0
 );
 
 CREATE TABLE post_pages
@@ -42,3 +43,4 @@ VALUES  ('aihe_vapaa'),
         ('keskustelu_nettikiusaamisesta'),
         ('seksi'),
         ('nimet');
+

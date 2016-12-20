@@ -11,6 +11,7 @@ import sanitation
 
 VOIKKO_BASEFORM = 'BASEFORM'
 ILLEGAL_CHARS_REGEX = r',|!|\?|\.|\)|\(|\^|/|"|&|:|;|=|~|\+|\[|\]|{|}|_|\*|\|'
+MAX_WORD_LENGTH = 50
 
 def count_frequencies(baseform_words):
     frequencies = dict()
@@ -37,8 +38,8 @@ def remove_common_words(words):
 
 
 def get_baseform_word(voikko, word):
+    word = word[0:MAX_WORD_LENGTH - 1]
     word_analysis = voikko.analyze(word)
-
     pros_words = []
 
     if word_analysis:
@@ -93,7 +94,7 @@ def get_sanitized_topic(config):
     posts = db.query('SELECT content '
                      'FROM posts '
                      'WHERE topic_id=$1 '
-                     'ORDER BY post_number', 52886).namedresult()
+                     'ORDER BY post_number', 1660425).namedresult()
 
     topic = ' '.join([post.content for post in posts])
 
