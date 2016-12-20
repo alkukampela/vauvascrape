@@ -144,8 +144,8 @@ class PostParser:
             print('Parsing topic ' + str(topic_id))
             post_pages = self.get_post_pages(topic_id)
             posts = self.parse_topic(post_pages)
-            if posts is None:
-                # Only empty posts in topic, mark it as invalid
+            if not posts:
+                print('Only empty posts in topic, mark it as invalid')
                 self.mark_topic_as_invalid(topic_id)
             else:
                 posts = self.add_topic_id_post_numbers(topic_id, posts)
