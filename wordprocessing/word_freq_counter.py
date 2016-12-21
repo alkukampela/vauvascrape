@@ -4,7 +4,7 @@ import libvoikko
 import pg
 import operator
 from itertools import filterfalse
-from collections import OrderedDict
+from collections import OrderedDict, Counter
 
 import utilities
 import sanitation
@@ -14,14 +14,8 @@ ILLEGAL_CHARS_REGEX = r',|!|\?|\.|\)|\(|\^|/|"|&|:|;|=|~|\+|\[|\]|{|}|_|\*|\|'
 MAX_WORD_LENGTH = 50
 
 def count_frequencies(baseform_words):
-    frequencies = {}
-    words_in_corpus = 0
-    for baseform_word in baseform_words:
-        if baseform_word in frequencies:
-            frequencies[baseform_word] += 1
-        else:
-            frequencies[baseform_word] = 1
-        words_in_corpus += 1
+    frequencies = Counter(baseform_words)
+    words_in_corpus = len(baseform_words)
 
     freq_list = []
     for word, frequency in frequencies.items():
@@ -30,6 +24,7 @@ def count_frequencies(baseform_words):
             "frequency": frequency,
             "scaled_frequency": frequency / words_in_corpus,
         })
+
     return words_in_corpus, freq_list
 
 def remove_numbers(words):
@@ -109,7 +104,7 @@ def get_next_topic_id_to_parse(db):
         row = db.query('SELECT id '
                        'FROM topics '
                        'WHERE is_invalid = false '
-                       'AND unique_word_count = 0'
+                       'AND word_count = 0'
                        'ORDER BY RANDOM() '
                        'LIMIT 1').namedresult()
         if not row:
@@ -120,7 +115,7 @@ def get_next_topic_id_to_parse(db):
 
 
 def materialize(db, topic_id, words_in_corpus, baseword_frequencies):
-    db.query('UPDATE topics SET unique_word_count=$1 WHERE id = $2',
+    db.query('UPDATE topics SET word_count=$1 WHERE id = $2',
              words_in_corpus,
              topic_id)
     for word in baseword_frequencies:

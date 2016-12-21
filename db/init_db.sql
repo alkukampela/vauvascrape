@@ -14,7 +14,7 @@ CREATE TABLE topics
     url               VARCHAR(255),
     is_invalid        BOOLEAN DEFAULT false,
     fetch_time        timestamp without time zone NOT NULL DEFAULT '1970-01-01 00:00:00'::timestamp without time zone
-    unique_word_count INT DEFAULT 0
+    word_count        INT DEFAULT 0
 );
 
 CREATE TABLE post_pages
