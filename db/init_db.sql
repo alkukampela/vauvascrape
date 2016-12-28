@@ -13,7 +13,7 @@ CREATE TABLE topics
     title             VARCHAR(255),
     url               VARCHAR(255),
     is_invalid        BOOLEAN DEFAULT false,
-    fetch_time        timestamp without time zone NOT NULL DEFAULT '1970-01-01 00:00:00'::timestamp without time zone
+    fetch_time        timestamp without time zone NOT NULL DEFAULT '1970-01-01 00:00:00'::timestamp without time zone,
     word_count        INT DEFAULT 0
 );
 
