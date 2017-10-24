@@ -25,7 +25,7 @@ def fetch_page_as_soup(topic_url, page_number):
 def get_page_count(topic_soup):
     last_page_bullet = topic_soup.find('li', {'class': 'pager-last last'})
     if last_page_bullet is not None:
-        return int(last_page_bullet.a.contents[0])
+        return int(last_page_bullet.a.contents[0].string)
     return 1
 
 
