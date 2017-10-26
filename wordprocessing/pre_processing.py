@@ -4,28 +4,37 @@ from gensim.models.phrases import Phrases, Phraser
 
 _VOIKKO = libvoikko.Voikko('fi')
 _POST_QUERY = 'SELECT id, content FROM posts'
+_TOPIC_QUERY = '''SELECT topic_id AS id, string_agg(content, '\n\n') AS content
+                  FROM posts
+                  GROUP BY topic_id'''
 _BATCH_SIZE = 100
 
 with open('stop_words.txt') as f:
     stop_words = [word.rstrip() for word in f]
 
-def get_posts(db):
+def get_rows(db, query):
     # TODO change loop to while True when actually doing this
     cursor = db.cursor()
-    cursor.execute(_POST_QUERY)
-    for i in range(50):
-        posts = cursor.fetchmany(_BATCH_SIZE)
-        if not posts:
+    cursor.execute(query)
+    for i in range(20):
+        rows = cursor.fetchmany(_BATCH_SIZE)
+        if not rows:
             break
-        yield from posts
+        yield from rows
+
+def get_topics(db):
+    yield from get_rows(db, _TOPIC_QUERY)
+
+def get_posts(db):
+    yield from get_rows(db, _POST_QUERY)
 
 def get_normalized_sentences(db):
     for post in get_posts(db):
-        for sentence in split_post(post):
+        for sentence in split_to_sentences(post.content):
             yield normalize(sentence.sentenceText)
 
-def split_post(post):
-    return _VOIKKO.sentences(post.content)
+def split_to_sentences(text):
+    return _VOIKKO.sentences(text)
 
 def normalize(text):
     words = []
@@ -54,8 +63,13 @@ def lemmatize(token):
 def is_stop_word(word):
     return word in stop_words
 
-# TODO normalize full posts, apply trigram model, store somewhere?
+# TODO normalize full posts (or topics), apply trigram model, store somewhere
 db = pgdb.connect(database='vauvafi')
 phrases = Phrases(get_normalized_sentences(db))
 bigram = Phraser(phrases)
 trigram = Phrases(bigram[get_normalized_sentences(db)])
+
+for topic in get_topics(db):
+    normalized_topic = trigram[normalize(topic.content)]
+    print(' '.join(normalized_topic))
+
