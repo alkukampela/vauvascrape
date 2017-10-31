@@ -17,7 +17,7 @@ with open('stop_words.txt') as f:
 def get_rows(db, query):
     with db.cursor() as cursor:
         cursor.execute(query)
-        for i in range(5):
+        while True:
             rows = cursor.fetchmany(_BATCH_SIZE)
             if not rows:
                 break
