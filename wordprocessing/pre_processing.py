@@ -1,6 +1,5 @@
 import pgdb
 import libvoikko
-from tqdm import tqdm
 from gensim.models.phrases import Phrases, Phraser
 
 _VOIKKO = libvoikko.Voikko('fi')
@@ -18,17 +17,17 @@ with open('stop_words.txt') as f:
 def get_rows(db, query):
     with db.cursor() as cursor:
         cursor.execute(query)
-        while True:
+        for i in range(5):
             rows = cursor.fetchmany(_BATCH_SIZE)
             if not rows:
                 break
             yield from rows
 
 def get_topics(db):
-    yield from tqdm(get_rows(db, _TOPIC_QUERY))
+    yield from get_rows(db, _TOPIC_QUERY)
 
 def get_posts(db):
-    yield from tqdm(get_rows(db, _POST_QUERY))
+    yield from get_rows(db, _POST_QUERY)
 
 def get_normalized_sentences(db):
     for post in get_posts(db):
@@ -55,32 +54,33 @@ def is_word(token):
     return token.tokenType == libvoikko.Token.WORD
 
 def lemmatize(token):
-    # TODO
-    # - Check spelling suggestions if the word is unknown?
-    # - Ensure these are actually good.
-    # - Always return something?
     analysis = _VOIKKO.analyze(token.tokenText)
-    if analysis:
+    try:
         return analysis[0]['BASEFORM'].lower()
+    except (IndexError, KeyError):
+        return None
 
 def is_stop_word(word):
     return word in stop_words
 
-def build_phrase_model(stream):
-    return Phraser(Phrases(stream))
+def build_phrase_model(sentence_stream):
+    return Phraser(Phrases(sentence_stream))
 
-def pre_process_topic(topic, bigram, trigram):
-    return ' '.join(trigram[bigram[normalize(topic)]])
+def pre_process(text, bigram, trigram):
+    return list(trigram[bigram[normalize(text)]])
 
-def pre_process_topics():
+def pre_process_topics(db):
+    bigram = build_phrase_model(get_normalized_sentences(db))
+    bigram.save('bigram_model')
+    trigram = build_phrase_model(bigram[get_normalized_sentences(db)])
+    trigram.save('trigram_model')
+    with db.cursor() as cursor:
+        cursor.executemany(_INSERT_NORMALIZED, (
+            (topic.id, pre_process(topic.content, bigram, trigram))
+            for topic in get_topics(db)
+        ))
+    db.commit()
+
+if __name__ == '__main__':
     with pgdb.connect(database='vauvafi') as db:
-        bigram = build_phrase_model(get_normalized_sentences(db))
-        bigram.save('bigram_model')
-        trigram = build_phrase_model(bigram[get_normalized_sentences(db)])
-        trigram.save('trigram_model')
-        with db.cursor() as cursor:
-            cursor.executemany(_INSERT_NORMALIZED, (
-                (topic.id, pre_process(topic.content, bigram, trigram))
-                for topic in get_topics(db)
-            ))
-        db.commit()
+        pre_process_topics(db)
